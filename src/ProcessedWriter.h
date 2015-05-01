@@ -42,6 +42,12 @@ public:
 private:
 	H5File *h5file;
 	DataSet *dataset;
+	DataSpace *dataspace;
+	DataSpace *memspace;
+
+	hsize_t maxdims[3];
+	hsize_t dimsf[3];
+	hsize_t chunk_dims[3];
 };
 
 #endif /* PROCESSEDWRITER_H_ */

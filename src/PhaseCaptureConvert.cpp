@@ -40,7 +40,7 @@ int main(void) {
 
 	std::cout << "count " << count << std::endl;
 
-	for(int k=0;k<count;k++ )
+	for(int k=0;k<count;k++)
 	{
 		raw_reader->getFrame(k,aframe);			// this reads a single frame
 		processed_writer->write_raw(k,*aframe);

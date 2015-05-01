@@ -38,12 +38,15 @@ public:
 	ProcessedWriter(const char* );
 	virtual ~ProcessedWriter();
 	void write_raw(const int offset, const Frame &frame);
+	void write_frame(const int offset, const Frame &frame);
 
 private:
 	H5File *h5file;
-	DataSet *dataset;
+	DataSet *dataset_raw;	//raw for testing
 	DataSpace *dataspace;
 	DataSpace *memspace;
+
+	DataSet *dataset_I0, *dataset_I1, *dataset_I2, *dataset_I3, *dataset_dc, *dataset_phase, *dataset_amp;
 
 	hsize_t maxdims[3];
 	hsize_t dimsf[3];

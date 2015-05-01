@@ -34,7 +34,7 @@ class Frame {
 public:
 	Frame();
 	virtual ~Frame();
-	//int for testing
+
 	std::valarray<int> frame_data;
 };
 

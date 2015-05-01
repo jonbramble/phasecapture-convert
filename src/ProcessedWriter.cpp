@@ -31,11 +31,11 @@ ProcessedWriter::ProcessedWriter(const char* hdf5filename){
 
 	h5file = new H5File( hdf5filename, H5F_ACC_TRUNC );
 
-	maxdims[0] = H5S_UNLIMITED;		// this dim is known for fixed imput file
+	maxdims[0] = H5S_UNLIMITED;		// this dim is known for fixed input file
 	maxdims[1] = IMAGE::NX;
 	maxdims[2] = IMAGE::NY;
 
-	dimsf[0] = 100;
+	dimsf[0] = 100;					// should set this or we will have zeros in the file - will need to calculate the averaging
 	dimsf[1] = IMAGE::NX;
 	dimsf[2] = IMAGE::NY;
 
@@ -45,17 +45,34 @@ ProcessedWriter::ProcessedWriter(const char* hdf5filename){
 	chunk_dims[1] = IMAGE::NX;
 	chunk_dims[2] = IMAGE::NY;
 
-	const H5std_string DATASETNAME("RAW");
+	const H5std_string dataset_RW_name = "RW";
+	const H5std_string dataset_I0_name = "I0";
+	const H5std_string dataset_I1_name = "I1";
+	const H5std_string dataset_I2_name = "I2";
+	const H5std_string dataset_I3_name = "I3";
+	const H5std_string dataset_DC_name = "DC";
+	const H5std_string dataset_PH_name = "PH";
+	const H5std_string dataset_AM_name = "AM";
 
 	//Set the chunk properties
 	DSetCreatPropList prop;
 	prop.setChunk(3, chunk_dims);
 
-	IntType datatype( PredType::NATIVE_UINT16 );
+	IntType datatype( PredType::NATIVE_UINT16 );		//needs to change to float for real data
 	datatype.setOrder( H5T_ORDER_LE );
+	memspace = new DataSpace(3, chunk_dims, NULL);  // create memoryspace geometries
+	dataspace = new DataSpace( 3, dimsf, maxdims ); // create dataspace geometries
 
-	dataspace = new DataSpace( 3, dimsf, maxdims );
-	dataset = new DataSet(h5file->createDataSet( DATASETNAME, datatype, *dataspace, prop ));	//create the RAW dataset
+	//create the datasets
+	dataset_raw = new DataSet(h5file->createDataSet( dataset_RW_name, datatype, *dataspace, prop ));
+	dataset_I0 = new DataSet(h5file->createDataSet( dataset_I0_name, datatype, *dataspace, prop ));
+	dataset_I1 = new DataSet(h5file->createDataSet( dataset_I1_name, datatype, *dataspace, prop ));
+	dataset_I2 = new DataSet(h5file->createDataSet( dataset_I2_name, datatype, *dataspace, prop ));
+	dataset_I3 = new DataSet(h5file->createDataSet( dataset_I3_name, datatype, *dataspace, prop ));
+	dataset_dc = new DataSet(h5file->createDataSet( dataset_DC_name, datatype, *dataspace, prop ));
+	dataset_phase = new DataSet(h5file->createDataSet( dataset_PH_name, datatype, *dataspace, prop ));
+	dataset_amp = new DataSet(h5file->createDataSet( dataset_AM_name, datatype, *dataspace, prop ));
+
 
 	prop.close();
 
@@ -63,7 +80,6 @@ ProcessedWriter::ProcessedWriter(const char* hdf5filename){
 
 // this writes raw frame data to raw dataset
 void ProcessedWriter::write_raw(const int offset, const Frame &frame){
-
 	// need to include the offset here
 
 	hsize_t shift[3];
@@ -85,22 +101,25 @@ void ProcessedWriter::write_raw(const int offset, const Frame &frame){
 
 	dataspace->getSimpleExtentDims( dim_out, NULL);
 
-	if(offset < dim_out[0]){
+	if(offset < dim_out[0]){ // can remove this later
 		dataspace->selectHyperslab(H5S_SELECT_SET, chunk_dims, shift);  // problem here with offset
-		memspace = new DataSpace(3, chunk_dims, NULL);
-
 		//is it possible to write the linear data directly to dataset without reshaping
-		dataset->write(data,PredType::NATIVE_INT, *memspace, *dataspace);
+		dataset_raw->write(data,PredType::NATIVE_INT, *memspace, *dataspace);
 	}
+}
+
+void ProcessedWriter::write_frame(const int offset, const Frame &frame){
+
+	// here we must write to the different datasets each processed component of the frame
+
+	// data[j][i] = frame.get_I0[i+j*IMAGE::NX]
+
 }
 
 ProcessedWriter::~ProcessedWriter() {
 	h5file->close();
 	delete memspace;
-	delete dataset;
+	delete dataset_raw, dataset_I0, dataset_I1, dataset_I2, dataset_I3, dataset_dc, dataset_phase, dataset_amp;
 	delete dataspace;
 	delete h5file;
 }
-
-
-//std::cout <<  dimout[0] << " x " << dimout[1] << " x " << dimout[2] << std::endl;

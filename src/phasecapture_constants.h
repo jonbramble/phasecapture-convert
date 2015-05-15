@@ -30,7 +30,8 @@ namespace IMAGE
 {
    const int NX = 256;                   // dataset dimensions
    const int NY = 256;
-   const int FRAME_SIZE = 256*256*4;
+   const int IMAGE_SIZE = 256*256;
+   const int FRAME_SIZE = IMAGE_SIZE*4;
 }
 
 #endif /* SRC_PHASECAPTURE_CONSTANTS_H_ */

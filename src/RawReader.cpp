@@ -31,18 +31,66 @@ RawReader::RawReader(const char* hdf5filename) {
 
 	// should be in try block?
 
-	const char* DATASET_NAME = "I1";							// change this for suitable raw dataset name
+	const char* DATASET_NAME = "RAW";							// change this for suitable raw dataset name
 
 	h5file = new H5File(hdf5filename,H5F_ACC_RDONLY);			// open file// do I need the new delete here
 	dataset = h5file->openDataSet( DATASET_NAME );
 	dataspace = dataset.getSpace();
 }
 
+// how many frames are there to read?
 int RawReader::getFrameCount(){
-	// how many frames are there to read?
+	hsize_t dims_out[2];
+	int ndims = dataspace.getSimpleExtentDims(dims_out, NULL);
+    return dims_out[0];
+}
+
+void RawReader::getFrameArray(const int index, Frame *_frame){
+	hsize_t      offset[2];   // hyperslab offset in the file
+	hsize_t      count[2];    // size of the hyperslab in the file
+
 	hsize_t dims_out[2];
 	int ndims = dataspace.getSimpleExtentDims( dims_out, NULL);
-    return dims_out[0];
+
+	offset[0] = index;
+	offset[1] = 0;
+
+	count[0]  = 1;
+	count[1]  = IMAGE::FRAME_SIZE;
+
+	dataspace.selectHyperslab( H5S_SELECT_SET, count, offset );
+
+	/*
+	* Define the memory dataspace in 2D
+	*/
+	hsize_t     dimsm[2];              /* memory space dimensions */
+	dimsm[0] = 1;
+	dimsm[1] = IMAGE::FRAME_SIZE;
+	DataSpace memspace( 2, dimsm );
+
+	/*
+	* Define memory hyperslab in 2D
+	*/
+	hsize_t      offset_out[2];   // hyperslab offset in memory
+	hsize_t      count_out[2];    // size of the hyperslab in memory
+
+	offset_out[0] = 0;
+	offset_out[1] = 0;
+
+	count_out[0]  = 1;
+	count_out[1]  = IMAGE::FRAME_SIZE;
+
+	memspace.selectHyperslab( H5S_SELECT_SET, count_out, offset_out );
+
+	// 1D array for temp storage
+	short data_out[IMAGE::FRAME_SIZE];
+
+	dataset.read( data_out, PredType::NATIVE_SHORT, memspace, dataspace );
+
+	for (int i = 0; i < IMAGE::FRAME_SIZE; i++)
+	{
+		_frame->frame_data[i] = data_out[i];		//frame storage is linear
+	}
 }
 
 void RawReader::getFrame(const int index, Frame *_frame){
@@ -108,8 +156,6 @@ void RawReader::getFrame(const int index, Frame *_frame){
 	}
 	}// end if
 	// TEMP FOR DEBUG AND TEST
-
-
 }
 
 void RawReader::getFrames(const int nframes, const int index, std::vector<Frame> &_frames){

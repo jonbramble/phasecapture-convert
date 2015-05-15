@@ -21,6 +21,8 @@ PhaseCapture Convert - HDF5 file format for PhaseCapture Camera Data
 #include <iostream>
 #include <vector>
 
+typedef unsigned short uint16_t;
+
 using namespace std;
 
 int main(void) {
@@ -28,7 +30,7 @@ int main(void) {
 	// all this will be in a interface function later with args for files, averaging and processing options
 
 	// create a read only reader object
-	RawReader *raw_reader = new RawReader("PhaseCaptureHDF5.h5");
+	RawReader *raw_reader = new RawReader("PhaseCaptureNA.h5");
 
 	// create the output file
 	ProcessedWriter *processed_writer = new ProcessedWriter("PhaseCaptureOUT.h5");
@@ -42,13 +44,11 @@ int main(void) {
 	//process through each frame and write to raw dataset - a simple copy
 	for(int k=0;k<count;k++)
 	{
-		raw_reader->getFrame(k,aframe);			// this reads a single frame
-		processed_writer->write_raw(k,*aframe);
+		raw_reader->getFrameArray(k,aframe);			// this reads a single frame
+		aframe->process();								// call process on frame to create the other parts - how does it know it has data?
+		//processed_writer->write_raw(k,*aframe);			// write raw data to file
+		processed_writer->write_frame(k,*aframe);
 	}
-
-	int n = 3;
-	std::vector<Frame> sframes(n);			//create a vector for averaging over multiple frames
-	raw_reader->getFrames(n,0,sframes);		// this reads sets of n frames
 
 	delete aframe;
     delete raw_reader;				// closes file
@@ -56,3 +56,7 @@ int main(void) {
 
 	return 0;
 }
+
+//int n = 3;
+//std::vector<Frame> sframes(n);			//create a vector for averaging over multiple frames
+//raw_reader->getFrames(n,0,sframes);		// this reads sets of n frames

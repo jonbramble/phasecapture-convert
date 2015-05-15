@@ -58,13 +58,14 @@ ProcessedWriter::ProcessedWriter(const char* hdf5filename){
 	DSetCreatPropList prop;
 	prop.setChunk(3, chunk_dims);
 
-	IntType datatype( PredType::NATIVE_UINT16 );		//needs to change to float for real data
+	IntType raw_datatype( PredType::NATIVE_SHORT );		//needs to change to float for real data
+	FloatType datatype ( PredType::NATIVE_FLOAT);
 	datatype.setOrder( H5T_ORDER_LE );
 	memspace = new DataSpace(3, chunk_dims, NULL);  // create memoryspace geometries
 	dataspace = new DataSpace( 3, dimsf, maxdims ); // create dataspace geometries
 
 	//create the datasets
-	dataset_raw = new DataSet(h5file->createDataSet( dataset_RW_name, datatype, *dataspace, prop ));
+	dataset_raw = new DataSet(h5file->createDataSet( dataset_RW_name, raw_datatype, *dataspace, prop ));
 	dataset_I0 = new DataSet(h5file->createDataSet( dataset_I0_name, datatype, *dataspace, prop ));
 	dataset_I1 = new DataSet(h5file->createDataSet( dataset_I1_name, datatype, *dataspace, prop ));
 	dataset_I2 = new DataSet(h5file->createDataSet( dataset_I2_name, datatype, *dataspace, prop ));
@@ -91,7 +92,7 @@ void ProcessedWriter::write_raw(const int offset, const Frame &frame){
 
 	// reshape the data into 2D format
 	int i, j;
-	int data[IMAGE::NX][IMAGE::NY];          // buffer for data to write
+	short data[IMAGE::NX][IMAGE::NY];          // buffer for data to write
 	for (j = 0; j < IMAGE::NX; j++)
 	{
 	   for (i = 0; i < IMAGE::NY; i++){
@@ -104,15 +105,52 @@ void ProcessedWriter::write_raw(const int offset, const Frame &frame){
 	if(offset < dim_out[0]){ // can remove this later
 		dataspace->selectHyperslab(H5S_SELECT_SET, chunk_dims, shift);  // problem here with offset
 		//is it possible to write the linear data directly to dataset without reshaping
-		dataset_raw->write(data,PredType::NATIVE_INT, *memspace, *dataspace);
+		dataset_raw->write(data,PredType::NATIVE_SHORT, *memspace, *dataspace);
 	}
 }
 
 void ProcessedWriter::write_frame(const int offset, const Frame &frame){
 
-	// here we must write to the different datasets each processed component of the frame
+	std::cout << "write frame " << offset << std::endl;
 
-	// data[j][i] = frame.get_I0[i+j*IMAGE::NX]
+	// here we must write to the different datasets each processed component of the frame
+	// need to include the offset here
+
+	hsize_t shift[3];
+	hsize_t dim_out[3];
+
+	shift[0] = offset;
+	shift[1] = 0;
+	shift[2] = 0;
+
+	// reshape the data into 2D format
+	int i, j;
+	float I0_tmp[IMAGE::NX][IMAGE::NY];          // buffer for data to write
+	float I1_tmp[IMAGE::NX][IMAGE::NY];          // buffer for data to write
+	float I2_tmp[IMAGE::NX][IMAGE::NY];          // buffer for data to write
+	float I3_tmp[IMAGE::NX][IMAGE::NY];          // buffer for data to write
+
+	for (j = 0; j < IMAGE::NX; j++)
+	{
+		for (i = 0; i < IMAGE::NY; i++){
+			I0_tmp[j][i] = frame.I1[i+j*IMAGE::NX];
+			I1_tmp[j][i] = frame.I2[i+j*IMAGE::NX];
+			I2_tmp[j][i] = frame.I3[i+j*IMAGE::NX];
+			I3_tmp[j][i] = frame.I4[i+j*IMAGE::NX];
+
+		 }
+	}
+
+	dataspace->getSimpleExtentDims( dim_out, NULL);
+
+	if(offset < dim_out[0]){ // can remove this later
+		dataspace->selectHyperslab(H5S_SELECT_SET, chunk_dims, shift);
+		dataset_I0->write(I0_tmp,PredType::NATIVE_FLOAT, *memspace, *dataspace);
+		dataset_I1->write(I1_tmp,PredType::NATIVE_FLOAT, *memspace, *dataspace);
+		dataset_I2->write(I2_tmp,PredType::NATIVE_FLOAT, *memspace, *dataspace);
+		dataset_I3->write(I3_tmp,PredType::NATIVE_FLOAT, *memspace, *dataspace);
+	}
+
 
 }
 

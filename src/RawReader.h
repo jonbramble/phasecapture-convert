@@ -42,6 +42,7 @@ public:
 	virtual ~RawReader();
 	int getFrameCount();
 	void getFrame(const int index, Frame *_frame);
+	void getFrameArray(const int index, Frame *_frame);
 	void getFrames(const int frames,const int index, std::vector<Frame> &_frames);
 
 private:

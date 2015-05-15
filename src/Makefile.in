@@ -97,7 +97,7 @@ am_capcon_OBJECTS = PhaseCaptureConvert.$(OBJEXT) Frame.$(OBJEXT) \
 	RawReader.$(OBJEXT) ProcessedWriter.$(OBJEXT)
 capcon_OBJECTS = $(am_capcon_OBJECTS)
 am__DEPENDENCIES_1 =
-capcon_DEPENDENCIES = $(am__DEPENDENCIES_1)
+capcon_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -270,7 +270,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CXXFLAGS = $(HDF5_CPPFLAGS) -std=c++0x
-capcon_LDADD = -lhdf5_cpp $(HDF5_LIBS)
+capcon_LDADD = $(HDF5_LDFLAGS) -lhdf5_cpp $(HDF5_LIBS)
 capcon_SOURCES = PhaseCaptureConvert.cpp Frame.cpp RawReader.cpp ProcessedWriter.cpp
 all: all-am
 

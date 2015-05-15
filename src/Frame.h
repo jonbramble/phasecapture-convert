@@ -25,6 +25,8 @@ PhaseCapture Convert - HDF5 file format for PhaseCapture Camera Data
 
 #include <valarray>
 #include <iostream>
+#include <algorithm>
+#include <iterator>
 #include "phasecapture_constants.h"
 
 #ifndef FRAME_H_
@@ -38,7 +40,9 @@ private:
 
 	void process_raw_trig();
 	void process_raw_dft();
-	void static_cast_valarray(std::valarray<float>& outArray, const std::valarray<uint16_t>& inArray);
+	//void static_cast_valarray(std::valarray<float>& outArray, const std::valarray<uint16_t>& inArray);
+
+	static float static_cast_op(const uint16_t);
 
 public:
 	Frame();
@@ -47,7 +51,7 @@ public:
 	std::valarray<uint16_t> frame_data;
 
 	std::valarray<uint16_t> I1,I2,I3,I4;
-	std::valarray<float> DC,Amp,Real,Phase; //need to change type here
+	std::valarray<double> DC,Amp,Real,Phase; //need to change type here
 
     void process();
 

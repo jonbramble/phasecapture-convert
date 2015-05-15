@@ -26,13 +26,16 @@ PhaseCapture Convert - HDF5 file format for PhaseCapture Camera Data
 
 Frame::Frame() {
 	frame_data.resize(IMAGE::FRAME_SIZE);
+
 	I1.resize(IMAGE::IMAGE_SIZE);
 	I2.resize(IMAGE::IMAGE_SIZE);
 	I3.resize(IMAGE::IMAGE_SIZE);
 	I4.resize(IMAGE::IMAGE_SIZE);
+
 	Amp.resize(IMAGE::IMAGE_SIZE);
 	DC.resize(IMAGE::IMAGE_SIZE);
-
+	Phase.resize(IMAGE::IMAGE_SIZE);
+	Real.resize(IMAGE::IMAGE_SIZE);
 }
 
 void Frame::process(){
@@ -45,7 +48,9 @@ void Frame::process(){
 
 	//process others
 	//choose method
-	process_raw_trig();
+	//process_raw_trig();
+	process_raw_dft();
+
 }
 
 Frame::~Frame() {
@@ -55,32 +60,62 @@ void Frame::process_raw_dft(){
 	// parallel DFT version
 	// Do matrix DFT conversion here on spliced vectors
 
+	// serial version first
+
+	std::valarray<double> i1f(IMAGE::IMAGE_SIZE), i2f(IMAGE::IMAGE_SIZE), i3f(IMAGE::IMAGE_SIZE), i4f(IMAGE::IMAGE_SIZE);
+
+	std::transform(std::begin(I1), std::end(I1), std::begin(i1f), static_cast_op);
+	std::transform(std::begin(I2), std::end(I2), std::begin(i2f), static_cast_op);
+	std::transform(std::begin(I3), std::end(I3), std::begin(i3f), static_cast_op);
+	std::transform(std::begin(I4), std::end(I4), std::begin(i4f), static_cast_op);
+
+	// F0
+	DC = i1f+i2f+i3f+i4f;
+	DC /= 4;
+
+	//F3
+	std::valarray<double> F3real = i1f-i3f;
+	std::valarray<double> F3img = i2f-i4f;
+
+	std::valarray<double> phradf = atan2(F3img,F3real);
+
+	Phase = phradf;
+	Phase *= 180/M_PI;
+
+	Amp = F3real/(2*std::cos(phradf));
+
 }
 
 void Frame::process_raw_trig(){
 	// element wise operations on arrays
 
 	// this is still far too slow!	// allocates memory on each run, could preallocate this  in constructor?
-	std::valarray<float> xf(IMAGE::IMAGE_SIZE), yf(IMAGE::IMAGE_SIZE), xf2(IMAGE::IMAGE_SIZE),
-		yf2(IMAGE::IMAGE_SIZE), zf(IMAGE::IMAGE_SIZE), phradf(IMAGE::IMAGE_SIZE), i1f(IMAGE::IMAGE_SIZE), i2f(IMAGE::IMAGE_SIZE), i3f(IMAGE::IMAGE_SIZE), i4f(IMAGE::IMAGE_SIZE);
+	std::valarray<double> xf(IMAGE::IMAGE_SIZE), yf(IMAGE::IMAGE_SIZE), xf2(IMAGE::IMAGE_SIZE),
+		yf2(IMAGE::IMAGE_SIZE), zf(IMAGE::IMAGE_SIZE), i1f(IMAGE::IMAGE_SIZE), i2f(IMAGE::IMAGE_SIZE), i3f(IMAGE::IMAGE_SIZE), i4f(IMAGE::IMAGE_SIZE);
 
-	static_cast_valarray(i1f,I1);
-	static_cast_valarray(i2f,I2);
-	static_cast_valarray(i3f,I3);
-	static_cast_valarray(i4f,I4);
+	std::transform(std::begin(I1), std::end(I1), std::begin(i1f), static_cast_op);
+	std::transform(std::begin(I2), std::end(I2), std::begin(i2f), static_cast_op);
+	std::transform(std::begin(I3), std::end(I3), std::begin(i3f), static_cast_op);
+	std::transform(std::begin(I4), std::end(I4), std::begin(i4f), static_cast_op);
+
+	std::cout << I1[0] << "," << i1f[0] << std::endl;
+	std::cout << I2[0] << "," << i2f[0] << std::endl;
+	std::cout << I3[0] << "," << i3f[0] << std::endl;
+	std::cout << I4[0] << "," << i4f[0] << std::endl;
 
 	// but these could be -ve
-	std::valarray<float> y = i1f-i3f;
-	std::valarray<float> x = i2f-i4f;
-	std::valarray<float> s(2.0, IMAGE::IMAGE_SIZE);
+	std::valarray<double> y = i1f-i3f;
+	std::valarray<double> x = i2f-i4f;
+	std::valarray<double> s(2.0, IMAGE::IMAGE_SIZE);
 
 	// element wise operations on arrays
-	phradf = atan2(xf,yf);
+	std::valarray<double> phradf = atan2(x,y);
+
 	Phase = phradf;
 	Phase *= 180/M_PI;
 
-	xf2 = std::pow(xf,s);
-	yf2 = std::pow(yf,s);
+	xf2 = std::pow(x,s);
+	yf2 = std::pow(y,s);
 	zf = xf2+yf2;
 
 	//confusion over amp here
@@ -89,13 +124,13 @@ void Frame::process_raw_trig(){
 
 	Real = std::cos(phradf)*Amp;
 
-	Amp /= 4;
-
 	DC = i1f+i2f+i3f+i4f;
 	DC /= 4;
 }
 
-void Frame::static_cast_valarray(std::valarray<float>& outArray, const std::valarray<uint16_t>& inArray){
+float Frame::static_cast_op(const uint16_t in) { return static_cast<double>(in); }
+
+/*void Frame::static_cast_valarray(std::valarray<float>& outArray, const std::valarray<uint16_t>& inArray){
 	for(int k=0;k<inArray.size();k++) outArray[k]= static_cast<float>(inArray[k]);
-}
+}*/
 

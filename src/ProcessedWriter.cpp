@@ -114,7 +114,7 @@ void ProcessedWriter::write_raw(const int offset, const Frame &frame){
 
 void ProcessedWriter::write_frame(const int offset, const Frame &frame){
 
-	std::cout << "write frame " << offset << std::endl;
+	//std::cout << "write frame " << offset << std::endl;
 
 	// here we must write to the different datasets each processed component of the frame
 	// need to include the offset here

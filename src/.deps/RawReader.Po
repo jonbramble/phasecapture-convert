@@ -224,7 +224,8 @@ RawReader.o: RawReader.cpp /usr/include/stdc-predef.h RawReader.h \
  /usr/include/c++/4.9/bits/locale_facets.tcc \
  /usr/include/c++/4.9/bits/basic_ios.tcc \
  /usr/include/c++/4.9/bits/ostream.tcc /usr/include/c++/4.9/istream \
- /usr/include/c++/4.9/bits/istream.tcc phasecapture_constants.h
+ /usr/include/c++/4.9/bits/istream.tcc /usr/include/c++/4.9/iterator \
+ /usr/include/c++/4.9/bits/stream_iterator.h phasecapture_constants.h
 
 /usr/include/stdc-predef.h:
 
@@ -799,5 +800,9 @@ Frame.h:
 /usr/include/c++/4.9/istream:
 
 /usr/include/c++/4.9/bits/istream.tcc:
+
+/usr/include/c++/4.9/iterator:
+
+/usr/include/c++/4.9/bits/stream_iterator.h:
 
 phasecapture_constants.h:

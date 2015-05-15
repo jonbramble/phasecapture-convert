@@ -30,6 +30,8 @@ Frame::Frame() {
 	I2.resize(IMAGE::IMAGE_SIZE);
 	I3.resize(IMAGE::IMAGE_SIZE);
 	I4.resize(IMAGE::IMAGE_SIZE);
+	Amp.resize(IMAGE::IMAGE_SIZE);
+	DC.resize(IMAGE::IMAGE_SIZE);
 
 }
 
@@ -37,12 +39,13 @@ void Frame::process(){
 	std::cout << "process " << std::endl;
 
 	I1 = frame_data[std::slice(0,IMAGE::IMAGE_SIZE,1)];
-	I2 = frame_data[std::slice(1*IMAGE::IMAGE_SIZE-1,IMAGE::IMAGE_SIZE,1)];
-	I3 = frame_data[std::slice(2*IMAGE::IMAGE_SIZE-1,IMAGE::IMAGE_SIZE,1)];
-	I4 = frame_data[std::slice(3*IMAGE::IMAGE_SIZE-1,IMAGE::IMAGE_SIZE,1)];
+	I2 = frame_data[std::slice(1*IMAGE::IMAGE_SIZE,IMAGE::IMAGE_SIZE,1)];
+	I3 = frame_data[std::slice(2*IMAGE::IMAGE_SIZE,IMAGE::IMAGE_SIZE,1)];
+	I4 = frame_data[std::slice(3*IMAGE::IMAGE_SIZE,IMAGE::IMAGE_SIZE,1)];
 
 	//process others
-	process_raw();
+	//choose method
+	process_raw_trig();
 }
 
 Frame::~Frame() {
@@ -54,10 +57,8 @@ void Frame::process_raw_dft(){
 
 }
 
-void Frame::process_raw(){
+void Frame::process_raw_trig(){
 	// element wise operations on arrays
-
-	// could replace with parallel FT method
 
 	// this is still far too slow!	// allocates memory on each run, could preallocate this  in constructor?
 	std::valarray<float> xf(IMAGE::IMAGE_SIZE), yf(IMAGE::IMAGE_SIZE), xf2(IMAGE::IMAGE_SIZE),
@@ -82,7 +83,7 @@ void Frame::process_raw(){
 	yf2 = std::pow(yf,s);
 	zf = xf2+yf2;
 
-		//confusion over amp here
+	//confusion over amp here
 	Amp = std::sqrt(zf);
 	Amp /= 2;
 
@@ -95,6 +96,6 @@ void Frame::process_raw(){
 }
 
 void Frame::static_cast_valarray(std::valarray<float>& outArray, const std::valarray<uint16_t>& inArray){
-	for(int k=0;k<IMAGE::IMAGE_SIZE;k++) outArray[k]= static_cast<float>(inArray[k]);
+	for(int k=0;k<inArray.size();k++) outArray[k]= static_cast<float>(inArray[k]);
 }
 

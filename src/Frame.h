@@ -36,7 +36,7 @@ private:
 	long int sum(const std::valarray<uint16_t> &sub_frame);
 	float sum(const std::valarray<float> &sub_frame);
 
-	void process_raw();
+	void process_raw_trig();
 	void process_raw_dft();
 	void static_cast_valarray(std::valarray<float>& outArray, const std::valarray<uint16_t>& inArray);
 

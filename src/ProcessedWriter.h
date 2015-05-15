@@ -46,7 +46,7 @@ private:
 	DataSpace *dataspace;
 	DataSpace *memspace;
 
-	DataSet *dataset_I0, *dataset_I1, *dataset_I2, *dataset_I3, *dataset_dc, *dataset_phase, *dataset_amp;
+	DataSet *dataset_I0, *dataset_I1, *dataset_I2, *dataset_I3, *dataset_dc, *dataset_phase, *dataset_amp, *dataset_re;
 
 	hsize_t maxdims[3];
 	hsize_t dimsf[3];

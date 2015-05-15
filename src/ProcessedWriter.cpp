@@ -25,9 +25,9 @@ PhaseCapture Convert - HDF5 file format for PhaseCapture Camera Data
 
 #include "ProcessedWriter.h"
 
-ProcessedWriter::ProcessedWriter(const char* hdf5filename){
 	// create the main file
 	// create the data sets for each part
+ProcessedWriter::ProcessedWriter(const char* hdf5filename){
 
 	h5file = new H5File( hdf5filename, H5F_ACC_TRUNC );
 
@@ -53,6 +53,7 @@ ProcessedWriter::ProcessedWriter(const char* hdf5filename){
 	const H5std_string dataset_DC_name = "DC";
 	const H5std_string dataset_PH_name = "PH";
 	const H5std_string dataset_AM_name = "AM";
+	const H5std_string dataset_RE_name = "RE";
 
 	//Set the chunk properties
 	DSetCreatPropList prop;
@@ -73,9 +74,11 @@ ProcessedWriter::ProcessedWriter(const char* hdf5filename){
 	dataset_dc = new DataSet(h5file->createDataSet( dataset_DC_name, datatype, *dataspace, prop ));
 	dataset_phase = new DataSet(h5file->createDataSet( dataset_PH_name, datatype, *dataspace, prop ));
 	dataset_amp = new DataSet(h5file->createDataSet( dataset_AM_name, datatype, *dataspace, prop ));
-
+	dataset_re = new DataSet(h5file->createDataSet( dataset_RE_name, datatype, *dataspace, prop ));
 
 	prop.close();
+	datatype.close();
+	raw_datatype.close();
 
 }
 
@@ -126,18 +129,23 @@ void ProcessedWriter::write_frame(const int offset, const Frame &frame){
 	// reshape the data into 2D format
 	int i, j;
 	float I0_tmp[IMAGE::NX][IMAGE::NY];          // buffer for data to write
-	float I1_tmp[IMAGE::NX][IMAGE::NY];          // buffer for data to write
-	float I2_tmp[IMAGE::NX][IMAGE::NY];          // buffer for data to write
-	float I3_tmp[IMAGE::NX][IMAGE::NY];          // buffer for data to write
+	float I1_tmp[IMAGE::NX][IMAGE::NY];
+	float I2_tmp[IMAGE::NX][IMAGE::NY];
+	float I3_tmp[IMAGE::NX][IMAGE::NY];
+	float DC_tmp[IMAGE::NX][IMAGE::NY];
+	float Amp_tmp[IMAGE::NX][IMAGE::NY];
+	float Phase_tmp[IMAGE::NX][IMAGE::NY];
 
 	for (j = 0; j < IMAGE::NX; j++)
 	{
-		for (i = 0; i < IMAGE::NY; i++){
+		for (i = 0; i < IMAGE::NY; i++){//check orientations
 			I0_tmp[j][i] = frame.I1[i+j*IMAGE::NX];
 			I1_tmp[j][i] = frame.I2[i+j*IMAGE::NX];
 			I2_tmp[j][i] = frame.I3[i+j*IMAGE::NX];
 			I3_tmp[j][i] = frame.I4[i+j*IMAGE::NX];
-
+			DC_tmp[j][i] = frame.DC[i+j*IMAGE::NX];
+			Amp_tmp[j][i] = frame.Amp[i+j*IMAGE::NX];
+			Phase_tmp[j][i] = frame.Phase[i+j*IMAGE::NX];
 		 }
 	}
 
@@ -149,15 +157,17 @@ void ProcessedWriter::write_frame(const int offset, const Frame &frame){
 		dataset_I1->write(I1_tmp,PredType::NATIVE_FLOAT, *memspace, *dataspace);
 		dataset_I2->write(I2_tmp,PredType::NATIVE_FLOAT, *memspace, *dataspace);
 		dataset_I3->write(I3_tmp,PredType::NATIVE_FLOAT, *memspace, *dataspace);
+		dataset_dc->write(DC_tmp,PredType::NATIVE_FLOAT, *memspace, *dataspace);
+		dataset_amp->write(Amp_tmp,PredType::NATIVE_FLOAT, *memspace, *dataspace);
+		dataset_phase->write(Phase_tmp,PredType::NATIVE_FLOAT, *memspace, *dataspace);
+
 	}
-
-
 }
 
 ProcessedWriter::~ProcessedWriter() {
 	h5file->close();
 	delete memspace;
-	delete dataset_raw, dataset_I0, dataset_I1, dataset_I2, dataset_I3, dataset_dc, dataset_phase, dataset_amp;
 	delete dataspace;
+	delete dataset_raw, dataset_I0, dataset_I1, dataset_I2, dataset_I3, dataset_dc, dataset_phase, dataset_amp, dataset_re;
 	delete h5file;
 }

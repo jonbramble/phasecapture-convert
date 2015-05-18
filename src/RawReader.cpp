@@ -45,7 +45,7 @@ int RawReader::getFrameCount(){
     return dims_out[0];
 }
 
-void RawReader::getFrameArray(const int index, Frame *_frame){
+void RawReader::getFrameArray(const int index, Frame &_frame){
 	hsize_t      offset[2];   // hyperslab offset in the file
 	hsize_t      count[2];    // size of the hyperslab in the file
 
@@ -89,11 +89,11 @@ void RawReader::getFrameArray(const int index, Frame *_frame){
 
 	for (int i = 0; i < IMAGE::FRAME_SIZE; i++)
 	{
-		_frame->frame_data[i] = data_out[i];		//frame storage is linear
+		_frame.frame_data_i[i] = data_out[i];		//frame storage is linear
 	}
 }
 
-void RawReader::getFrame(const int index, Frame *_frame){
+void RawReader::getFrame(const int index, Frame &_frame){
 	// create a hyperslab in the file
 	hsize_t      offset[3];   // hyperslab offset in the file
 	hsize_t      count[3];    // size of the hyperslab in the file
@@ -152,7 +152,7 @@ void RawReader::getFrame(const int index, Frame *_frame){
 
 	for (int j = 0; j < IMAGE::NY; j++){
 		   for (int i = 0; i < IMAGE::NX; i++)
-		       _frame->frame_data[i+j*IMAGE::NX] = data_out[j][i];		//frame storage is linear
+		       _frame.frame_data_i[i+j*IMAGE::NX] = data_out[j][i];		//frame storage is linear
 	}
 	}// end if
 	// TEMP FOR DEBUG AND TEST
@@ -161,8 +161,6 @@ void RawReader::getFrame(const int index, Frame *_frame){
 void RawReader::getFrames(const int nframes, const int index, std::vector<Frame> &_frames){
 
 	// have to get n frames starting at offset but cope with end of file
-
-	//&& nframes == _frames.size()
 
 	// the hyperslab on out could be 3D, but perhaps sequential 2D is better.
 
@@ -176,12 +174,7 @@ void RawReader::getFrames(const int nframes, const int index, std::vector<Frame>
 	//protect for out of range - might be a better way with exceptions
 	if(index < dims_out[0] )
 		{
-		std::cout << "run frames " << std::endl;
 
-		/*
-		* Define hyperslab in the dataset; implicitly giving strike and
-		* block NULL.
-		*/
 		offset[0] = index;		// this needs to move along in steps of nframes
 		offset[1] = 0;
 		offset[2] = 0;
@@ -229,7 +222,7 @@ void RawReader::getFrames(const int nframes, const int index, std::vector<Frame>
 		for (int k =0; k < nframes; k++){
 			for (int j = 0; j < IMAGE::NY; j++){
 			   for (int i = 0; i < IMAGE::NX; i++){
-				   _frames[k].frame_data[i+j*IMAGE::NX] = data_out[k][j][i];
+				   _frames[k].frame_data_i[i+j*IMAGE::NX] = data_out[k][j][i];
 			   }
 			}
 		}

@@ -40,30 +40,20 @@ private:
 
 	void process_raw_trig();
 	void process_raw_dft();
-	//void static_cast_valarray(std::valarray<float>& outArray, const std::valarray<uint16_t>& inArray);
 
-	static float static_cast_op(const uint16_t);
+	static double static_cast_op(const uint16_t);
 
 public:
 	Frame();
 	virtual ~Frame();
 
-	std::valarray<uint16_t> frame_data;
+	static void average_frames(const std::vector<Frame> frames, Frame &sub_frame);
 
-	std::valarray<uint16_t> I1,I2,I3,I4;
-	std::valarray<double> DC,Amp,Real,Phase; //need to change type here
+	std::valarray<uint16_t> frame_data_i;	// raw data from file
+	std::valarray<double> frame_data_d;		// double version
 
-    void process();
-
-	/*void get_ave_I1(uint16_t&);
-	void get_ave_I2(uint16_t&);
-	void get_ave_I3(uint16_t&);
-	void get_ave_I4(uint16_t&);
-
-	void get_ave_dc(float&);
-	void get_ave_amp(float&);
-	void get_ave_phase(float&);
-	void get_ave_real(float&);*/
+	std::valarray<double> I1,I2,I3,I4,DC,Amp,Real,Phase;; // spliced data
+    void process();	// run the conversion
 
 };
 

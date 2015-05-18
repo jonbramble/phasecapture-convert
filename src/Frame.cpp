@@ -24,8 +24,9 @@ PhaseCapture Convert - HDF5 file format for PhaseCapture Camera Data
 
 #include "Frame.h"
 
-Frame::Frame() {
-	frame_data.resize(IMAGE::FRAME_SIZE);
+Frame::Frame() : frame_data_d(0.0,IMAGE::FRAME_SIZE)
+	{
+	frame_data_i.resize(IMAGE::FRAME_SIZE);
 
 	I1.resize(IMAGE::IMAGE_SIZE);
 	I2.resize(IMAGE::IMAGE_SIZE);
@@ -39,14 +40,15 @@ Frame::Frame() {
 }
 
 void Frame::process(){
-	std::cout << "process " << std::endl;
+	// all the data needs to be cast as double for trig functions
+	std::transform(std::begin(frame_data_i), std::end(frame_data_i), std::begin(frame_data_d), static_cast_op);
 
-	I1 = frame_data[std::slice(0,IMAGE::IMAGE_SIZE,1)];
-	I2 = frame_data[std::slice(1*IMAGE::IMAGE_SIZE,IMAGE::IMAGE_SIZE,1)];
-	I3 = frame_data[std::slice(2*IMAGE::IMAGE_SIZE,IMAGE::IMAGE_SIZE,1)];
-	I4 = frame_data[std::slice(3*IMAGE::IMAGE_SIZE,IMAGE::IMAGE_SIZE,1)];
+	//slice up the data
+	I1 = frame_data_d[std::slice(0,IMAGE::IMAGE_SIZE,1)];
+	I2 = frame_data_d[std::slice(1*IMAGE::IMAGE_SIZE,IMAGE::IMAGE_SIZE,1)];
+	I3 = frame_data_d[std::slice(2*IMAGE::IMAGE_SIZE,IMAGE::IMAGE_SIZE,1)];
+	I4 = frame_data_d[std::slice(3*IMAGE::IMAGE_SIZE,IMAGE::IMAGE_SIZE,1)];
 
-	//process others
 	//choose method
 	//process_raw_trig();
 	process_raw_dft();
@@ -62,50 +64,26 @@ void Frame::process_raw_dft(){
 
 	// serial version first
 
-	std::valarray<double> i1f(IMAGE::IMAGE_SIZE), i2f(IMAGE::IMAGE_SIZE), i3f(IMAGE::IMAGE_SIZE), i4f(IMAGE::IMAGE_SIZE);
-
-	std::transform(std::begin(I1), std::end(I1), std::begin(i1f), static_cast_op);
-	std::transform(std::begin(I2), std::end(I2), std::begin(i2f), static_cast_op);
-	std::transform(std::begin(I3), std::end(I3), std::begin(i3f), static_cast_op);
-	std::transform(std::begin(I4), std::end(I4), std::begin(i4f), static_cast_op);
-
 	// F0
-	DC = i1f+i2f+i3f+i4f;
+	DC = I1+I2+I3+I4;
 	DC /= 4;
 
 	//F3
-	std::valarray<double> F3real = i1f-i3f;
-	std::valarray<double> F3img = i2f-i4f;
-
+	std::valarray<double> F3real = I1-I3;
+	std::valarray<double> F3img = I2-I4;
 	std::valarray<double> phradf = atan2(F3img,F3real);
 
 	Phase = phradf;
 	Phase *= 180/M_PI;
-
 	Amp = F3real/(2*std::cos(phradf));
-
 }
 
 void Frame::process_raw_trig(){
 	// element wise operations on arrays
 
-	// this is still far too slow!	// allocates memory on each run, could preallocate this  in constructor?
-	std::valarray<double> xf(IMAGE::IMAGE_SIZE), yf(IMAGE::IMAGE_SIZE), xf2(IMAGE::IMAGE_SIZE),
-		yf2(IMAGE::IMAGE_SIZE), zf(IMAGE::IMAGE_SIZE), i1f(IMAGE::IMAGE_SIZE), i2f(IMAGE::IMAGE_SIZE), i3f(IMAGE::IMAGE_SIZE), i4f(IMAGE::IMAGE_SIZE);
-
-	std::transform(std::begin(I1), std::end(I1), std::begin(i1f), static_cast_op);
-	std::transform(std::begin(I2), std::end(I2), std::begin(i2f), static_cast_op);
-	std::transform(std::begin(I3), std::end(I3), std::begin(i3f), static_cast_op);
-	std::transform(std::begin(I4), std::end(I4), std::begin(i4f), static_cast_op);
-
-	std::cout << I1[0] << "," << i1f[0] << std::endl;
-	std::cout << I2[0] << "," << i2f[0] << std::endl;
-	std::cout << I3[0] << "," << i3f[0] << std::endl;
-	std::cout << I4[0] << "," << i4f[0] << std::endl;
-
 	// but these could be -ve
-	std::valarray<double> y = i1f-i3f;
-	std::valarray<double> x = i2f-i4f;
+	std::valarray<double> y = I1-I3;
+	std::valarray<double> x = I2-I4;
 	std::valarray<double> s(2.0, IMAGE::IMAGE_SIZE);
 
 	// element wise operations on arrays
@@ -114,9 +92,9 @@ void Frame::process_raw_trig(){
 	Phase = phradf;
 	Phase *= 180/M_PI;
 
-	xf2 = std::pow(x,s);
-	yf2 = std::pow(y,s);
-	zf = xf2+yf2;
+	std::valarray<double> xf2 = std::pow(x,s);
+	std::valarray<double> yf2 = std::pow(y,s);
+	std::valarray<double> zf = xf2+yf2;
 
 	//confusion over amp here
 	Amp = std::sqrt(zf);
@@ -124,13 +102,44 @@ void Frame::process_raw_trig(){
 
 	Real = std::cos(phradf)*Amp;
 
-	DC = i1f+i2f+i3f+i4f;
+	DC = I1+I2+I3+I4;
 	DC /= 4;
 }
 
-float Frame::static_cast_op(const uint16_t in) { return static_cast<double>(in); }
+void Frame::average_frames(const std::vector<Frame> frames, Frame &sub_frame){
+	// iterate over a number of frames
+	// do the averaging and rounding
+	// return single frame
 
-/*void Frame::static_cast_valarray(std::valarray<float>& outArray, const std::valarray<uint16_t>& inArray){
-	for(int k=0;k<inArray.size();k++) outArray[k]= static_cast<float>(inArray[k]);
+	// single thread at first
+
+	// tmp write through
+	int size = frames.size();
+	std::valarray<double> tmp(IMAGE::FRAME_SIZE);
+	std::valarray<uint16_t> frame_data(IMAGE::FRAME_SIZE);
+
+	// alternative impl using valarray
+	for(int f=0;f<size;f++)
+		sub_frame.frame_data_d += frames[f].frame_data_d;
+
+
+}
+
+double Frame::static_cast_op(const uint16_t in) { return static_cast<double>(in); }
+
+
+
+
+
+// simple method at first
+
+/*for(int k=0;k<IMAGE::FRAME_SIZE;k++){
+	// we do rounding here for now - but will change with additional of double frame_data array
+	long tmp = 0;
+	for(int f=0;f<size;f++)
+	{
+		tmp += frames[f].frame_data[k];
+	}
+
+	sub_frame.frame_data[k] = std::round(tmp/size);
 }*/
-

@@ -36,27 +36,38 @@ int main(void) {
 	ProcessedWriter *processed_writer = new ProcessedWriter("PhaseCaptureOUT.h5");
 
 	// create a new frame
-	Frame *aframe = new Frame();
+	Frame ave_frame;
+	Frame read_frame;
 
+	// this tells us the length of the file so we can calculate size of the output file
 	int count = raw_reader->getFrameCount();
 	std::cout << "count " << count << std::endl;
 
-	//process through each frame and write to raw dataset - a simple copy
-	for(int k=0;k<count;k++)
-	{
-		raw_reader->getFrameArray(k,aframe);			// this reads a single frame
-		aframe->process();								// call process on frame to create the other parts - how does it know it has data?
-		//processed_writer->write_raw(k,*aframe);			// write raw data to file
-		processed_writer->write_frame(k,*aframe);
+	int n = 5;											// set averaging with n for now
+
+	std::vector<Frame> frames(n);						// create a vector to hold the frames
+
+	int parts = count / n;
+	int extra = count % n;								// these are discarded
+
+	std::cout << parts << std::endl;
+
+	for(int p=0;p<parts;p++){
+
+		    // replace this with a reader that gets a 2d hyperslab
+			for(int k=0;k<n;k++){
+				raw_reader->getFrameArray(n*p+k,frames[k]);		// is there a neater way with iterators
+			}
+
+			Frame::average_frames(frames,ave_frame);
+			ave_frame.process();								// process the frame once averaged -- could we avoid a rounding error with a float storage
+			processed_writer->write_frame(p,ave_frame);			// write this frame to the output file
 	}
 
-	delete aframe;
+	//TODO: Calculations of size of output
+
     delete raw_reader;				// closes file
     delete processed_writer;		// closes file
 
 	return 0;
 }
-
-//int n = 3;
-//std::vector<Frame> sframes(n);			//create a vector for averaging over multiple frames
-//raw_reader->getFrames(n,0,sframes);		// this reads sets of n frames

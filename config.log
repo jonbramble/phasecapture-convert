@@ -29,9 +29,6 @@ uname -v = #16-Ubuntu SMP Thu Apr 30 16:09:58 UTC 2015
 
 PATH: /usr/local/hdf5/bin
 PATH: /usr/local/heroku/bin
-PATH: /usr/local/hdf5/bin
-PATH: /usr/local/heroku/bin
-PATH: /usr/local/heroku/bin
 PATH: /usr/local/sbin
 PATH: /usr/local/bin
 PATH: /usr/sbin

@@ -99,7 +99,7 @@ void ProcessedWriter::write_raw(const int offset, const Frame &frame){
 	for (j = 0; j < IMAGE::NX; j++)
 	{
 	   for (i = 0; i < IMAGE::NY; i++){
-		   data[j][i] = frame.frame_data[i+j*IMAGE::NX];
+		   data[j][i] = frame.frame_data_i[i+j*IMAGE::NX];
 	   }
 	}
 
